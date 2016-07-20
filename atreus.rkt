@@ -1,13 +1,13 @@
 #lang racket
 
-(define cols 12)
+(define cols 6)
 (define rows 4)
 
 (define x-offset 20)
 (define y-offset 20)
 
 (define spacing 19)
-(define angle 10)
+(define angle 0)
 
 (define column-offsets '(8 5 0 6 11 59 59 11 6 0 5 8))
 
@@ -159,7 +159,7 @@
 
 (define (switch row col)
   (let* ([left? (< col 6)]
-         [rotation (if left? -10 10)]
+         [rotation 0]
          [x (* (+ 1 col) spacing)]
          [y (+ (list-ref column-offsets col) (* spacing row))]
          [hypotenuse (sqrt (+ (* x x) (* y y)))]
@@ -180,8 +180,8 @@
          [column-net `(net ,(+ net-col 5)
                        ,(string->symbol (format "N-col-~s" net-col)))]
          ;; rotate middle keys additional 90° after calculating position
-         [rotation (cond [(= 5 col) 80]
-                         [(= 6 col) 280]
+         [rotation (cond [(= 5 col) 90]
+                         [(= 6 col) 270]
                          [true rotation])])
     (switch-module x′ y′ rotation label
                    (if left? diode-net column-net)
@@ -189,7 +189,7 @@
 
 (define (diode row col)
   (let* ([left? (< col 6)]
-         [rotation (if left? -10 10)]
+         [rotation 0]
          [x (* (+ 1 col) spacing)]
          [y (+ (list-ref column-offsets col) (* spacing row))]
          [hypotenuse (sqrt (+ (* x x) (* y y)))]
@@ -234,8 +234,6 @@
 (define board
   (apply append nets
          (list (net-class nets))
-         (list microcontroller-module)
-         edge-cuts
          switches+diodes))
 
 (define (write-placement filename)
@@ -248,8 +246,6 @@
       (display "\n" op)
       (for ([f board])
         (pretty-print f op 1))
-      (display (call-with-input-file "traces.rktd"
-                 (curry read-string 999999)) op)
       (display ")" op))))
 
 (write-placement "atreus.kicad_pcb")
