@@ -1,6 +1,8 @@
 // -*- mode: c -*-
 /* All distances are in mm. */
 
+kerf = 0.2;
+
 /* set output quality */
 $fn = 50;
 
@@ -15,7 +17,7 @@ key_hole_size = 20;
 
 /* rotation angle; the angle between the halves is twice this
    number */
-angle = 10;
+angle = 0;
 
 /* The radius of screw holes. Holes will be slightly bigger due
    to the cut width. */
@@ -31,7 +33,7 @@ washer_radius     = 4 * screw_hole_radius;
 back_screw_hole_offset = 0;
 
 /* Distance between halves. */
-hand_separation        = 0;
+hand_separation        = 5;
 
 /* The approximate size of switch holes. Used to determine how
    thick walls can be, i.e. how much room around each switch hole to
@@ -40,7 +42,7 @@ switch_hole_size = 14;
 
 /* Sets whether the case should use notched holes. As far as I can
    tell these notches are not all that useful... */
-use_notched_holes = true;
+use_notched_holes = false;
 
 /* Number of rows and columns in the matrix. You need to update
    staggering_offsets if you change n_cols. */
@@ -68,8 +70,7 @@ module rz(angle, center=undef) {
   translate(center) {
     rotate(angle) {
       translate(-center) {
-        for (i=[0:$children-1])
-          child(i);
+        children();
       }
     }
   }
@@ -82,26 +83,11 @@ function rz_fun(p, angle, center) = [cos(angle) * (p[0] - center[0]) - sin(angle
                                      sin(angle) * (p[0] - center[0]) + cos(angle) * (p[1] - center[1])+ center[1]];
 
 module switch_hole(position, notches=use_notched_holes) {
-  /* Cherry MX switch hole with the center at `position`. Sizes come
-     from the ErgoDox design. */
-  hole_size    = 13.97;
-  notch_width  = 3.5001;
-  notch_offset = 4.2545;
-  notch_depth  = 0.8128;
   translate(position) {
-    union() {
-      square([hole_size, hole_size], center=true);
-      if (notches == true) {
-        translate([0, notch_offset]) {
-          square([hole_size+2*notch_depth, notch_width], center=true);
-        }
-        translate([0, -notch_offset]) {
-          square([hole_size+2*notch_depth, notch_width], center=true);
-        }
-      }
-    }
+    square([15.5 - kerf, 12.8 - kerf], center=true);
   }
 };
+
 
 module regular_key(position, size) {
   /* Create a hole for a regular key. */
@@ -121,6 +107,7 @@ module thumb_key(position, size) {
   }
 }
 
+
 module column (bottom_position, switch_holes, key_size=key_hole_size) {
   /* Create a column of keys. */
   translate(bottom_position) {
@@ -139,20 +126,16 @@ module rotate_half() {
      the thumb key. Assumes that the thumb key is a 1x1.5 key and that
      it is shifted 0.5*column_spacing up relative to the nearest column. */
   rotation_y_offset = 1.75 * column_spacing;
-  for (i=[0:$children-1]) {
     rz(angle, [hand_separation, rotation_y_offset]) {
-      child(i);
+      children();
     }
-  }
 }
 
 module add_hand_separation() {
   /* Shift everything right to get desired hand separation. */
-  for (i=[0:$children-1]) {
     translate([0.5*hand_separation, /* we get back the full separation
                                        because of mirroring */
-               0]) child(i);
-  }
+               0]) children();
 }
 
 module right_half (switch_holes=true, key_size=key_hole_size) {
@@ -316,10 +299,5 @@ top_plate();
 translate([300, 0]) { switch_plate(); }
 translate([0, 150]) { bottom_plate(); }
 translate([300, 150]) {
-  if (quarter_spacer == true) {
     quartered_spacer();
-  }
-  else {
-    spacer();
-  }
 }
